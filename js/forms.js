@@ -2,6 +2,7 @@ import {state,add,can} from "./store.js";import {CATS,SOURCES} from "./firebase.
 const $=s=>document.querySelector(s),today=()=>new Date().toISOString().slice(0,10);
 export const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const projOpts=()=>state.projects.map(p=>`<option value="${p.id}" ${p.id===localStorage.lastProj?"selected":""}>${esc(p.name)}</option>`).join("");
+export const catList=()=>[...new Set([...CATS,...state.categories.map(c=>c.name)])];
 export function close(){$("#modal").hidden=true}
 function open(html,onSave){$("#sheet").innerHTML=html;$("#modal").hidden=false;
   $("#sheet").querySelectorAll(".seg").forEach(g=>g.onclick=e=>{if(e.target.dataset.v){g.querySelectorAll("button").forEach(b=>b.classList.remove("on"));e.target.classList.add("on");g.dataset.v=e.target.dataset.v}});
@@ -15,11 +16,11 @@ export function menu(){
 export function expense(){open(`<form id="sf"><h3>مصروف جديد</h3>
 <label>المبلغ</label><input name="amount" type="number" step="0.01" min="0.01" required autofocus>
 <label>المشروع</label><select name="projectId" required>${projOpts()}</select>
-<label>البند</label><select name="category">${CATS.map(c=>`<option>${c}</option>`).join("")}</select>
+<label>البند</label><input name="category" list="cats" placeholder="اختر أو اكتب بندًا جديدًا" required autocomplete="off"><datalist id="cats">${catList().map(c=>`<option value="${esc(c)}">`).join("")}</datalist>
 <label>مصدر الدفع</label>${seg("source",SOURCES,"bank")}
 <details><summary>المزيد</summary><label>التاريخ</label><input name="date" type="date" value="${today()}"><label>الضريبة (VAT) من المبلغ</label><input name="vat" type="number" step="0.01" value="0"><label>المورد</label><input name="vendor"><label>ملاحظة</label><input name="note"></details>
 <button style="width:100%">حفظ المصروف</button></form>`,async f=>{localStorage.lastProj=f.projectId;
-    await add("expenses",{...f,amount:+f.amount,vat:+f.vat||0,date:f.date||today()})});}
+    f.category=f.category.trim();await add("expenses",{...f,amount:+f.amount,vat:+f.vat||0,date:f.date||today()});if(!catList().includes(f.category))try{await add("categories",{name:f.category})}catch(e){console.warn(e)}});}
 export function invoice(){open(`<form id="sf"><h3>فاتورة بيع</h3>
 <label>العميل</label><input name="customer" required autofocus>
 <label>المشروع</label><select name="projectId" required>${projOpts()}</select>
