@@ -1,0 +1,29 @@
+import {auth,db,COMPANY} from "./firebase.js";
+import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {collection,doc,writeBatch,getDocs,query,where,serverTimestamp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+const $=s=>document.querySelector(s),log=t=>{$("#log").textContent+=t+"\n"};
+let seed=7;const rnd=()=>(seed=seed*16807%2147483647)/2147483647,pick=a=>a[Math.floor(rnd()*a.length)],between=(a,b)=>Math.round((a+rnd()*(b-a))/10)*10;
+const day=(m,d)=>`2026-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+const rdate=()=>{const m=pick([8,9,10]);return day(m,1+Math.floor(rnd()*(m===10?8:28)))};
+const vat=t=>Math.round(t*15/115*100)/100;
+async function load(){
+  seed=7;const b=writeBatch(db),base={companyId:COMPANY,by:auth.currentUser.uid,demo:true,createdAt:serverTimestamp()};
+  const mk=(c,d)=>{const r=doc(collection(db,c));b.set(r,{...base,...d});return r.id};
+  const cust=["شركة الأفق للتجارة","مؤسسة النخبة","شركة البناء المتقدم"];
+  const P=["مشروع هنجر الدمام","مشروع مستودعات جدة","مشروع مصنع الرياض"].map((name,i)=>mk("projects",{name,customer:cust[i]}));
+  const A=[["بنك الراجحي 1","bank",500000],["بنك الأهلي","bank",200000],["الصندوق الرئيسي","cash",50000],["عهدة أحمد","custody",0],["عهدة محمد","custody",0]].map(([name,type,opening])=>({id:mk("accounts",{name,type,opening}),type}));
+  [[0,300000,8,5,"إيداع دفعة عميل"],[2,30000,8,20,"تغذية الصندوق"],[3,40000,8,10,"تغذية عهدة"],[3,20000,9,15,"تغذية عهدة"],[4,30000,9,1,"تغذية عهدة"]].forEach(([a,amount,m,d,note])=>mk("funds",{accountId:A[a].id,amount,date:day(m,d),note}));
+  ["رواتب","ضيافة","صيانة"].forEach(name=>mk("categories",{name}));
+  const big=["مواد","عمالة","معدات","إيجار","رواتب"],small=["نقل","ضيافة","صيانة","مواد"],vend=["مصنع الحديد الوطني","شركة النقل السريع","مؤسسة المعدات الثقيلة","مورد محلي","مقاول باطن"];let n=0;
+  [[0,9,8000,45000],[1,6,5000,30000],[2,6,200,4000],[3,5,200,3000],[4,5,200,2500]].forEach(([a,cnt,lo,hi])=>{for(let i=0;i<cnt;i++){const category=pick(a<2?big:small),amount=between(lo,hi);
+    mk("expenses",{amount,vat:["رواتب","عمالة","إيجار"].includes(category)?0:vat(amount),projectId:pick(P),category,accountId:A[a].id,source:A[a].type,date:rdate(),vendor:pick(vend)});n++}});
+  const I=[[0,350000,8,12,"1001"],[0,280000,9,20,"1002"],[1,420000,8,25,"1003"],[1,180000,10,3,"1004"],[2,600000,9,5,"1005"],[2,250000,9,28,"1006"],[2,30000,10,5,"C-01","credit"]].map(([p,total,m,d,number,kind])=>({id:mk("invoices",{customer:cust[p],projectId:P[p],total,vat:vat(total),date:day(m,d),number,kind:kind||"invoice"})}));
+  [[0,350000,8,30],[2,200000,9,10],[1,150000,10,2],[4,300000,9,25]].forEach(([i,amount,m,d])=>mk("receipts",{invoiceId:I[i].id,amount,date:day(m,d),note:"دفعة تجريبية"}));
+  await b.commit();log(`تمت الإضافة: 3 مشاريع، 5 حسابات، ${n} مصروفاً، 7 فواتير (منها إشعار دائن)، 4 استلامات. افتح النظام وحدّث الصفحة.`);
+}
+async function wipe(){let k=0;for(const c of ["expenses","invoices","receipts","funds","accounts","categories","projects"]){
+  const s=await getDocs(query(collection(db,c),where("companyId","==",COMPANY),where("demo","==",true)));const b=writeBatch(db);s.docs.forEach(d=>b.delete(d.ref));await b.commit();k+=s.size}
+  log(`تم حذف ${k} سجلاً تجريبياً. بياناتك الحقيقية لم تُمس.`)}
+const run=(f,msg)=>async()=>{if(!confirm(msg))return;try{await f()}catch(e){log("خطأ: "+e.message)}};
+$("#go").onclick=run(load,"إضافة بيانات تجريبية إلى قاعدة البيانات؟");$("#rm").onclick=run(wipe,"حذف كل البيانات التجريبية؟");
+onAuthStateChanged(auth,u=>{$("#go").disabled=$("#rm").disabled=!u;$("#st").textContent=u?"مسجّل الدخول: "+u.email:"سجّل الدخول من الصفحة الرئيسية أولاً ثم أعد فتح هذه الصفحة."});
