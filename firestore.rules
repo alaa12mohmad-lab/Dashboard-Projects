@@ -7,5 +7,7 @@ service cloud.firestore{match /databases/{d}/documents{
  match /expenses/{i}{allow read:if ok();allow create:if ok()&&role()!='manager';allow update,delete:if ok()&&role() in ['admin','accountant'];}
  match /invoices/{i}{allow read:if ok()&&role()!='entry';allow create:if ok()&&role() in ['admin','accountant','entry'];allow update,delete:if ok()&&role() in ['admin','accountant'];}
  match /categories/{i}{allow read:if ok();allow create:if ok()&&role()!='manager';allow update,delete:if ok()&&role() in ['admin','accountant'];}
+ match /accounts/{i}{allow read:if ok();allow write:if ok()&&role() in ['admin','accountant'];}
+ match /funds/{i}{allow read:if ok()&&role()!='entry';allow write:if ok()&&role() in ['admin','accountant'];}
  match /receipts/{i}{allow read:if ok()&&role()!='entry';allow create:if ok()&&role() in ['admin','accountant','manager'];allow update,delete:if ok()&&role() in ['admin','accountant'];}
 }}

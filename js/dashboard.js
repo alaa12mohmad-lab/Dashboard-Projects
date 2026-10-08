@@ -1,4 +1,4 @@
-import {state} from "./store.js";import {esc,receipt} from "./forms.js";
+import {state,can} from "./store.js";import {esc,receipt,expense,invoice} from "./forms.js";
 const n=x=>Math.round(x).toLocaleString("en-US"),sgn=i=>i.kind==="credit"?-1:1;
 const net=x=>(x.total??x.amount)-(x.vat||0);
 let charts=[];
@@ -36,10 +36,11 @@ export function customers(){const m={};
   state.receipts.forEach(r=>{const i=state.invoices.find(x=>x.id===r.invoiceId);if(i)m[i.customer].got+=r.amount});
   return Object.values(m).map(c=>({...c,left:c.total-c.got})).sort((a,b)=>b.left-a.left);}
 export const invLeft=i=>i.total-state.receipts.filter(r=>r.invoiceId===i.id).reduce((s,r)=>s+r.amount,0);
-export function listExpenses(el){const P=id=>state.projects.find(p=>p.id===id)?.name||"";const S={bank:"بنك",cash:"صندوق",custody:"عهدة"};
-  el.innerHTML=`<div class="box"><table><tr><th>التاريخ</th><th>المشروع</th><th>البند</th><th>المصدر</th><th>المبلغ</th></tr>${[...state.expenses].sort((a,b)=>b.date>a.date?1:-1).map(x=>`<tr><td>${x.date}</td><td>${esc(P(x.projectId))}</td><td>${esc(x.category)}</td><td>${S[x.source]||""}</td><td>${n(x.amount)}</td></tr>`).join("")||"<tr><td>لا توجد مصاريف. اضغط + لإضافة أول مصروف.</td></tr>"}</table></div>`;}
+export function listExpenses(el){const P=id=>state.projects.find(p=>p.id===id)?.name||"";const S={bank:"بنك",cash:"صندوق",custody:"عهدة"},A=x=>state.accounts.find(a=>a.id===x.accountId)?.name||S[x.source]||"";
+  el.innerHTML=`<div class="box"><table><tr><th>التاريخ</th><th>المشروع</th><th>البند</th><th>الحساب</th><th>المبلغ</th><th></th></tr>${[...state.expenses].sort((a,b)=>b.date>a.date?1:-1).map(x=>`<tr><td>${x.date}</td><td>${esc(P(x.projectId))}</td><td>${esc(x.category)}</td><td>${esc(A(x))}</td><td>${n(x.amount)}</td><td>${can("edit")?`<button data-ex="${x.id}">تعديل</button>`:""}</td></tr>`).join("")||"<tr><td>لا توجد مصاريف. اضغط + لإضافة أول مصروف.</td></tr>"}</table></div>`;el.querySelectorAll("[data-ex]").forEach(b=>b.onclick=()=>expense(state.expenses.find(x=>x.id===b.dataset.ex)));}
 export function listInvoices(el,canRec){const P=id=>state.projects.find(p=>p.id===id)?.name||"";
-  el.innerHTML=`<div class="box"><table><tr><th>التاريخ</th><th>العميل</th><th>المشروع</th><th>الإجمالي</th>${canRec?"<th>المستلم</th><th>المتبقي</th><th></th>":""}</tr>${[...state.invoices].sort((a,b)=>b.date>a.date?1:-1).map(i=>{const l=invLeft(i),pc=i.total?Math.round((i.total-l)/i.total*100):0;
-  return`<tr><td>${i.date}</td><td>${esc(i.customer)}${i.kind==="credit"?" (إشعار دائن)":""}</td><td>${esc(P(i.projectId))}</td><td>${n(i.total)}</td>${canRec?`<td><div class="bar"><i style="width:${pc}%"></i></div></td><td>${n(l)}</td><td>${l>0&&i.kind!=="credit"?`<button data-r="${i.id}">استلام</button>`:""}</td>`:""}</tr>`}).join("")||"<tr><td>لا توجد فواتير.</td></tr>"}</table></div>`;
+  el.innerHTML=`<div class="box"><table><tr><th>التاريخ</th><th>العميل</th><th>المشروع</th><th>الإجمالي</th><th></th>${canRec?"<th>المستلم</th><th>المتبقي</th><th></th>":""}</tr>${[...state.invoices].sort((a,b)=>b.date>a.date?1:-1).map(i=>{const l=invLeft(i),pc=i.total?Math.round((i.total-l)/i.total*100):0;
+  return`<tr><td>${i.date}</td><td>${esc(i.customer)}${i.kind==="credit"?" (إشعار دائن)":""}</td><td>${esc(P(i.projectId))}</td><td>${n(i.total)}</td><td>${can("edit")?`<button data-in="${i.id}">تعديل</button>`:""}</td>${canRec?`<td><div class="bar"><i style="width:${pc}%"></i></div></td><td>${n(l)}</td><td>${l>0&&i.kind!=="credit"?`<button data-r="${i.id}">استلام</button>`:""}</td>`:""}</tr>`}).join("")||"<tr><td>لا توجد فواتير.</td></tr>"}</table></div>`;
+  el.querySelectorAll("[data-in]").forEach(b=>b.onclick=()=>invoice(state.invoices.find(x=>x.id===b.dataset.in)));
   el.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{const i=state.invoices.find(x=>x.id===b.dataset.r);receipt(i,invLeft(i))});}
 export function listProjects(el){el.innerHTML=`<div class="box"><table><tr><th>المشروع</th><th>العميل</th></tr>${state.projects.map(p=>`<tr><td>${esc(p.name)}</td><td>${esc(p.customer||"")}</td></tr>`).join("")||"<tr><td>أضف أول مشروع بزر +</td></tr>"}</table></div>`;}
