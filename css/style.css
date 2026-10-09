@@ -17,3 +17,4 @@ input,select{width:100%;padding:10px;margin:4px 0 10px;border:1px solid var(--ln
 .row{display:flex;gap:8px}.row>*{flex:1}details{margin-bottom:10px}summary{cursor:pointer;color:var(--ac);margin-bottom:6px}
 .alt{background:#fff;color:var(--ink);border:1px solid var(--ln)}.cv{position:relative;height:280px}
 @media print{header,#fab,button,#modal{display:none!important}body{background:#fff}.box,.c{break-inside:avoid}}
+.empty{display:flex;align-items:center;justify-content:center;height:100%;color:var(--mut)}

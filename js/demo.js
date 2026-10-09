@@ -19,6 +19,10 @@ export async function load(){
   [[0,350000,8,30],[2,200000,9,10],[1,150000,10,2],[4,300000,9,25]].forEach(([i,amount,m,d])=>mk("receipts",{invoiceId:I[i].id,amount,date:day(m,d),note:"دفعة تجريبية"}));
   await b.commit();return(`تمت الإضافة: 3 مشاريع، 5 حسابات، ${n} مصروفاً، 7 فواتير (منها إشعار دائن)، 4 استلامات. افتح النظام وحدّث الصفحة.`);
 }
-export async function wipe(){let k=0;for(const c of ["expenses","invoices","receipts","funds","accounts","categories","projects"]){
-  const s=await getDocs(query(collection(db,c),where("companyId","==",COMPANY),where("demo","==",true)));const b=writeBatch(db);s.docs.forEach(d=>b.delete(d.ref));await b.commit();k+=s.size}
-  return(`تم حذف ${k} سجلاً تجريبياً. بياناتك الحقيقية لم تُمس.`)}
+async function purge(cols,demoOnly){let k=0,err=[];for(const c of cols){try{
+  const q=demoOnly?query(collection(db,c),where("companyId","==",COMPANY),where("demo","==",true)):query(collection(db,c),where("companyId","==",COMPANY));
+  const s=await getDocs(q);for(let i=0;i<s.docs.length;i+=400){const b=writeBatch(db);s.docs.slice(i,i+400).forEach(d=>b.delete(d.ref));await b.commit()}k+=s.size}catch(e){err.push(c+": "+e.message)}}
+  return `تم حذف ${k} سجلاً.`+(err.length?"\nتعذر الحذف في:\n"+err.join("\n"):"")}
+const ALL=["expenses","invoices","receipts","funds","accounts","categories","projects"];
+export const wipe=()=>purge(ALL,true);
+export const resetAll=()=>purge([...ALL,"attachments"],false);
