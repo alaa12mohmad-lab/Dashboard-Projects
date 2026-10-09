@@ -15,3 +15,5 @@ table{width:100%;border-collapse:collapse}th,td{padding:8px;border-bottom:1px so
 input,select{width:100%;padding:10px;margin:4px 0 10px;border:1px solid var(--ln);border-radius:6px;font:inherit}label{font-size:13px;color:var(--mut)}
 .seg{display:flex;gap:6px;margin:4px 0 10px}.seg button{flex:1;background:#fff;color:var(--ink);border:1px solid var(--ln)}.seg button.on{background:var(--ink);color:#fff}
 .row{display:flex;gap:8px}.row>*{flex:1}details{margin-bottom:10px}summary{cursor:pointer;color:var(--ac);margin-bottom:6px}
+.alt{background:#fff;color:var(--ink);border:1px solid var(--ln)}.cv{position:relative;height:280px}
+@media print{header,#fab,button,#modal{display:none!important}body{background:#fff}.box,.c{break-inside:avoid}}

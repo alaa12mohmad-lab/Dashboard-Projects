@@ -1,0 +1,5 @@
+import {state} from "./store.js";import {esc} from "./forms.js";
+const L={expenses:"مصروف",invoices:"فاتورة",projects:"مشروع"},F={amount:"المبلغ",total:"الإجمالي",projectId:"المشروع",category:"البند",accountId:"الحساب",date:"التاريخ",vat:"الضريبة",vendor:"المورد",note:"ملاحظة",customer:"العميل",name:"الاسم",budget:"الميزانية",kind:"النوع",number:"الرقم"};
+export function auditView(el){const nm=id=>state.projects.find(p=>p.id===id)?.name||state.accounts.find(a=>a.id===id)?.name||id,id=k=>["projectId","accountId"].includes(k);
+  const rows=[...state.audit].sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+  el.innerHTML=`<div class="box"><table><tr><th>الوقت</th><th>المستخدم</th><th>العملية</th><th>التغيير</th></tr>${rows.map(r=>`<tr><td>${r.createdAt?new Date(r.createdAt.seconds*1000).toLocaleString("ar-SA"):""}</td><td>${esc(r.byEmail)}</td><td>تعديل ${L[r.coll]||r.coll}</td><td style="white-space:normal">${Object.entries(r.changes).filter(([k])=>k!=="source"&&k!=="hasFile").map(([k,[a,b]])=>`${F[k]||k}: ${esc(id(k)?nm(a):a)} ← ${esc(id(k)?nm(b):b)}`).join("<br>")}</td></tr>`).join("")||"<tr><td>لا توجد تعديلات بعد.</td></tr>"}</table></div>`}

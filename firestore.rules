@@ -9,5 +9,7 @@ service cloud.firestore{match /databases/{d}/documents{
  match /categories/{i}{allow read:if ok();allow create:if ok()&&role()!='manager';allow update,delete:if ok()&&role() in ['admin','accountant'];}
  match /accounts/{i}{allow read:if ok();allow write:if ok()&&role() in ['admin','accountant'];}
  match /funds/{i}{allow read:if ok()&&role()!='entry';allow write:if ok()&&role() in ['admin','accountant'];}
+ match /attachments/{i}{allow read:if ok();allow create:if ok()&&role()!='manager';allow delete:if ok()&&role() in ['admin','accountant'];}
+ match /audit/{i}{allow read:if ok()&&role()!='entry';allow create:if ok();allow update,delete:if false;}
  match /receipts/{i}{allow read:if ok()&&role()!='entry';allow create:if ok()&&role() in ['admin','accountant','manager'];allow update,delete:if ok()&&role() in ['admin','accountant'];}
 }}
