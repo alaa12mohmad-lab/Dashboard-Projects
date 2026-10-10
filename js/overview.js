@@ -1,8 +1,8 @@
-import {state,can,put} from "./store.js";import {esc,project} from "./forms.js";import {analyze,cfg} from "./insights.js";
+import {state,can,put} from "./store.js";import {esc,project} from "./forms.js";import {analyze,cfg,guideFor} from "./insights.js";
 const n=x=>Math.round(x).toLocaleString("en-US"),pc=x=>x==null?"—":Math.round(x)+"%";
 const SC={r:["#c4573f","حرج"],a:["#d79b2b","انتباه"],g:["#2e8b6e","سليم"],n:["#9aa7b4","لا بيانات"]},SV={h:SC.r[0],m:SC.a[0],l:"#9aa7b4"};
 const dot=c=>`<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${c};margin-left:6px"></span>`;
-const card=(a,g)=>`<div class="al" style="border-right:4px solid ${SV[a.sev]}"><b>${esc(a.t)}</b>${a.pn?` <span class="mut">— ${esc(a.pn)}</span>`:""}<p>${esc(a.why)}</p><details><summary>ماذا أفعل؟</summary><div style="white-space:pre-line">${esc(g[a.g]||"")}</div></details>${can("receipt")?`<div class="row" style="margin-top:8px"><button class="alt" data-ack="${esc(a.k)}" data-s="done">تمت المعالجة</button><button class="alt" data-ack="${esc(a.k)}" data-s="snooze">تأجيل 7 أيام</button></div>`:""}</div>`;
+const card=(a,g)=>`<div class="al" style="border-right:4px solid ${SV[a.sev]}"><b>${esc(a.t)}</b>${a.pn?` <span class="mut">— ${esc(a.pn)}</span>`:""}<p>${esc(a.why)}</p><details><summary>ماذا أفعل؟</summary><div style="white-space:pre-line">${esc(guideFor(a,g))}</div></details>${can("receipt")?`<div class="row" style="margin-top:8px"><button class="alt" data-ack="${esc(a.k)}" data-s="done">تمت المعالجة</button><button class="alt" data-ack="${esc(a.k)}" data-s="snooze">تأجيل 7 أيام</button></div>`:""}</div>`;
 const acks=el=>el.querySelectorAll("[data-ack]").forEach(b=>b.onclick=()=>{const k=b.dataset.ack,s=b.dataset.s;put("alerts",k.replace(/[\/\s]/g,"_"),{key:k,status:s,until:s==="snooze"?new Date(Date.now()+7*864e5).toISOString().slice(0,10):null})});
 let ch;
 export function overview(el,sel,pick){const {M,A}=analyze(),c=cfg(),mgr=state.role!=="entry";ch?.destroy();
