@@ -38,6 +38,9 @@ export function expense(e){
     const ac=state.accounts.find(a=>a.id===f.accountId),bl=ac&&state.role!=="entry"?bal(ac,e?.id):Infinity;
     if(bl<d.amount&&!confirm(`المبلغ أكبر من رصيد "${ac.name}" (${Math.round(bl).toLocaleString("en-US")}). متابعة؟`))return false;
     if(state.expenses.some(x=>x.id!==e?.id&&x.amount===d.amount&&x.projectId===d.projectId&&x.date===d.date&&(x.vendor||"")===(d.vendor||""))&&!confirm("يوجد مصروف مطابق (نفس المبلغ والمشروع والتاريخ والمورد). هل هو مكرر؟ متابعة الحفظ؟"))return false;
+    const pj=state.projects.find(p=>p.id===d.projectId),bg=+pj?.budgets?.[d.category];
+    if(bg){const sp=state.expenses.filter(x=>x.projectId===d.projectId&&x.category===d.category&&x.id!==e?.id).reduce((s,x)=>s+x.amount-(x.vat||0),0)+d.amount-d.vat;
+      if(sp>bg&&!confirm(`هذا المصروف يجعل بند «${d.category}» في «${pj.name}» ${Math.round(sp).toLocaleString("en-US")} مقابل تقدير ${Math.round(bg).toLocaleString("en-US")}. سيظهر تنبيه للمدير. متابعة؟`))return false}
     if(file&&file.size)d.hasFile=true;
     let id=e?.id;if(e)await upd("expenses",id,d);else id=(await add("expenses",d)).id;await att(file,id);
     if(!catList().includes(f.category))try{await add("categories",{name:f.category})}catch(x){console.warn(x)}});}
@@ -56,7 +59,11 @@ export function receipt(inv,left){open(`<form id="sf"><h3>تسجيل استلا�
 <label>المبلغ المستلم</label><input name="amount" type="number" step="0.01" min="0.01" max="${left}" required autofocus>
 <label>التاريخ</label><input name="date" type="date" value="${today()}"><label>ملاحظة</label><input name="note">
 <button style="width:100%">حفظ الاستلام</button></form>`,f=>add("receipts",{...f,amount:+f.amount,invoiceId:inv.id}));}
-export function project(e){open(`<form id="sf"><h3>${e?"تعديل مشروع":"مشروع جديد"}</h3><label>اسم المشروع</label><input name="name" required value="${v(e,"name")}"><label>العميل</label><input name="customer" value="${v(e,"customer")}"><label>الميزانية (صافي بعد الضريبة)</label><input name="budget" type="number" step="0.01" min="0" value="${v(e,"budget",0)}"><button style="width:100%">حفظ</button>${e?`<button type="button" data-del="projects:${e.id}" style="width:100%;margin-top:8px;background:#b5483a">حذف المشروع</button>`:""}</form>`,f=>{const d={...f,budget:+f.budget||0};return e?upd("projects",e.id,d):add("projects",d)});}
+export function project(e){const B=e?.budgets||{};open(`<form id="sf"><h3>${e?"تعديل مشروع":"مشروع جديد"}</h3><label>اسم المشروع</label><input name="name" required value="${v(e,"name")}"><label>العميل</label><input name="customer" value="${v(e,"customer")}">
+<div class="row"><div><label>قيمة العقد (صافي)</label><input name="contractValue" type="number" step="0.01" min="0" value="${v(e,"contractValue",0)}"></div><div><label>نسبة الإنجاز %</label><input name="progress" type="number" step="0.1" min="0" max="100" value="${v(e,"progress",0)}"></div></div>
+<details ${e?"open":""}><summary>تقدير التكلفة لكل بند (صافي بعد الضريبة)</summary>${catList().map(c=>`<label>${esc(c)}</label><input name="bud:${esc(c)}" type="number" step="0.01" min="0" value="${esc(B[c]??"")}">`).join("")}</details>
+<button style="width:100%">حفظ</button>${e?`<button type="button" data-del="projects:${e.id}" style="width:100%;margin-top:8px;background:#b5483a">حذف المشروع</button>`:""}</form>`,f=>{const b={};for(const k in f)if(k.startsWith("bud:")){if(+f[k])b[k.slice(4)]=+f[k];delete f[k]}
+    const d={...f,contractValue:+f.contractValue||0,progress:Math.min(100,+f.progress||0),budgets:b,budget:Object.values(b).reduce((a,x)=>a+x,0)||e?.budget||0};return e?upd("projects",e.id,d):add("projects",d)});}
 export function transfer(a){const o=state.accounts.filter(x=>x.id!==a.id);if(!o.length)return open("<p>أضف حساباً آخر أولاً.</p>");
   open(`<form id="sf"><h3>تحويل من ${esc(a.name)}</h3><label>إلى حساب</label><select name="to">${o.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("")}</select><label>المبلغ</label><input name="amount" type="number" step="0.01" min="0.01" required><label>التاريخ</label><input name="date" type="date" value="${today()}"><button style="width:100%">تحويل</button></form>`,async f=>{const m=+f.amount,t=state.accounts.find(x=>x.id===f.to);
     await add("funds",{accountId:a.id,amount:-m,date:f.date,note:"تحويل إلى "+t.name});await add("funds",{accountId:t.id,amount:m,date:f.date,note:"تحويل من "+a.name})});}

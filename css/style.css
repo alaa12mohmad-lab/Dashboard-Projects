@@ -18,3 +18,4 @@ input,select{width:100%;padding:10px;margin:4px 0 10px;border:1px solid var(--ln
 .alt{background:#fff;color:var(--ink);border:1px solid var(--ln)}.cv{position:relative;height:280px}
 @media print{header,#fab,button,#modal{display:none!important}body{background:#fff}.box,.c{break-inside:avoid}}
 .empty{display:flex;align-items:center;justify-content:center;height:100%;color:var(--mut)}
+.al{background:#fff;border:1px solid var(--ln);border-radius:8px;padding:10px 12px;margin:10px 0}.al p{margin:6px 0}.mut{color:var(--mut);font-size:13px}tr.pj{cursor:pointer}tr.pj:hover{background:#f4f7fa}summary{font-size:14px}

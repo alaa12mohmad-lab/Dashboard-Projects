@@ -1,11 +1,11 @@
 import {db,auth,COMPANY} from "./firebase.js";
-import {collection,onSnapshot,addDoc,updateDoc,deleteDoc,getDocs,query,where,serverTimestamp,doc,getDoc} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-export const state={projects:[],expenses:[],categories:[],accounts:[],funds:[],audit:[],invoices:[],receipts:[],role:null};
+import {collection,onSnapshot,addDoc,updateDoc,setDoc,deleteDoc,getDocs,query,where,serverTimestamp,doc,getDoc} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+export const state={projects:[],expenses:[],categories:[],accounts:[],funds:[],audit:[],settings:[],alerts:[],invoices:[],receipts:[],role:null};
 const subs=[];export const onChange=f=>subs.push(f);
 export async function start(uid){
   const u=await getDoc(doc(db,"users",uid));state.role=u.exists()?u.data().role:null;
   if(!state.role)return false;
-  const cols=["projects","expenses","categories","accounts"];if(state.role!=="entry")cols.push("invoices","receipts","funds","audit");
+  const cols=["projects","expenses","categories","accounts","settings"];if(state.role!=="entry")cols.push("invoices","receipts","funds","audit","alerts");
   cols.forEach(c=>onSnapshot(query(collection(db,c),where("companyId","==",COMPANY)),s=>{
     state[c]=s.docs.map(d=>({id:d.id,...d.data()}));subs.forEach(f=>f());}));
   return true;}
@@ -21,6 +21,7 @@ export const del=async(c,id)=>{const o=state[c]?.find(x=>x.id===id)||{};
   const kids=async(k,f)=>{const s=await getDocs(query(collection(db,k),where(f,"==",id)));await Promise.all(s.docs.map(d=>deleteDoc(d.ref)))};
   try{if(c==="expenses"||c==="invoices")await kids("attachments","refId");if(c==="invoices")await kids("receipts","invoiceId")}catch(e){console.warn(e)}
   try{await add("audit",{coll:c,docId:id,changes:{__del:[[o.name,o.customer,o.category,o.amount??o.total,o.date].filter(x=>x!=null&&x!=="").join(" | "),null]},byEmail:auth.currentUser.email})}catch(e){console.warn(e)}};
+export const put=(c,id,d)=>setDoc(doc(db,c,id),{...d,companyId:COMPANY,updatedBy:auth.currentUser.uid,updatedAt:serverTimestamp()},{merge:true});
 export function csv(name,rows){const t=rows.map(r=>r.map(c=>`"${String(c??"").replace(/"/g,'""')}"`).join(",")).join("\r\n"),a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+t],{type:"text/csv"}));a.download=name+".csv";a.click()}
 export const can=a=>({expense:state.role!=="manager",invoice:["admin","accountant","entry"].includes(state.role),
   receipt:["admin","accountant","manager"].includes(state.role),project:["admin","accountant"].includes(state.role),account:["admin","accountant"].includes(state.role),edit:["admin","accountant"].includes(state.role)})[a];
